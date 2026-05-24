@@ -3,7 +3,7 @@
 		"title": "Dr.COM",
 		"action": {
 			"type": "view",
-			"path": "drcom-auth-v111"
+			"path": "drcom-auth-v112"
 		},
 		"depends": {
 			"acl": [ "luci-app-drcom-auth" ]

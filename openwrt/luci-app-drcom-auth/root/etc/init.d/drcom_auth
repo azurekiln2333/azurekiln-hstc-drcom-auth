@@ -121,13 +121,13 @@ reload_service() {
 }
 
 authorize() {
-	write_config
+	write_config >/dev/null
 	/bin/sh "$APP_DIR/get_authorize_url.sh"
 }
 
 ticket() {
-	write_config
-	/bin/sh "$APP_DIR/auto_login_and_verify.sh"
+	write_config >/dev/null
+	/bin/sh "$APP_DIR/auto_login_and_verify.sh" >/dev/null
 }
 
 boot() {

@@ -2,7 +2,7 @@ param(
     [string]$PackageRoot = ".\luci-app-drcom-auth",
     [string]$OutputDir = "..\release",
     [string]$PackageName = "luci-app-drcom-auth",
-    [string]$Version = "1.0.11-1",
+    [string]$Version = "1.0.12-1",
     [string]$Architecture = "all"
 )
 

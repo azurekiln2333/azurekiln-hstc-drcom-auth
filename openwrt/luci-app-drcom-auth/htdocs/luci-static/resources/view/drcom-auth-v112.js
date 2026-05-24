@@ -22,6 +22,7 @@ return view.extend({
 				authorizeStatus: '授权链接状态',
 				authorizeIdle: '未获取',
 				authorizeRunning: '获取中...',
+				authorizeDone: '获取成功',
 				authorizeFailed: '获取失败',
 				cas: 'CAS 认证',
 				network: '联网检测',
@@ -58,6 +59,7 @@ return view.extend({
 				authorizeStatus: 'Authorize URL Status',
 				authorizeIdle: 'Not requested',
 				authorizeRunning: 'Requesting...',
+				authorizeDone: 'Success',
 				authorizeFailed: 'Request failed',
 				cas: 'CAS Authentication',
 				network: 'Network Check',
@@ -145,7 +147,7 @@ return view.extend({
 				var node = document.getElementById('drcom-authorize-status');
 				var output = (res && (res.stdout || res.stderr)) ? (res.stdout || res.stderr).trim() : '';
 				if (node)
-					node.textContent = output || tr('authorizeIdle');
+					node.textContent = output ? tr('authorizeDone') + ': ' + output : tr('authorizeIdle');
 			}).catch(function(e) {
 				var node = document.getElementById('drcom-authorize-status');
 				if (node)

@@ -9,7 +9,7 @@ else
 	exit 1
 fi
 
-output_status "$STATUS_LOG_FILE" "Sending identity_login request: $AUTHORIZATION_API"
+output_status "$STATUS_LOG_FILE" "Sending identity_login request: $AUTHORIZATION_API" >/dev/null
 RESPONSE=$(curl -s -G "$AUTHORIZATION_API" \
 	--data-urlencode "login_method=$LOGIN_METHOD" \
 	--data-urlencode "wlan_user_ip=$TERM_IP" \
@@ -21,21 +21,21 @@ RESPONSE=$(curl -s -G "$AUTHORIZATION_API" \
 	--data-urlencode "mac_type=$MAC_TYPE" \
 	--data-urlencode "jsVersion=$JS_VERSION")
 
-output_status "$STATUS_LOG_FILE" "[response] $RESPONSE"
+output_status "$STATUS_LOG_FILE" "[response] $RESPONSE" >/dev/null
 JSON=$(echo "$RESPONSE" | sed -e 's/^jsonpReturn(//' -e 's/);$//')
-output_status "$STATUS_LOG_FILE" "[JSON] $JSON"
+output_status "$STATUS_LOG_FILE" "[JSON] $JSON" >/dev/null
 
 RESULT=$(echo "$JSON" | grep -o '"result"[ ]*:[ ]*[^,}]*' | cut -d ':' -f 2 | tr -d ' "')
-output_status "$STATUS_LOG_FILE" "[RESULT] $RESULT"
+output_status "$STATUS_LOG_FILE" "[RESULT] $RESULT" >/dev/null
 
 if [ "$RESULT" = "1" ] || [ "$RESULT" = "ok" ]; then
 	AUTHORIZE_URI=$(echo "$JSON" | sed -n 's/.*"authorize_uri"[ ]*:[ ]*"\([^"]*\)".*/\1/p')
 	AUTHORIZE_URI=$(echo "$AUTHORIZE_URI" | sed 's#\\/#/#g')
-	output_status "$STATUS_LOG_FILE" "Successfully obtained authorize URL: $AUTHORIZE_URI"
+	output_status "$STATUS_LOG_FILE" "Successfully obtained authorize URL: $AUTHORIZE_URI" >/dev/null
 	printf "%s\n" "$AUTHORIZE_URI"
 else
 	MSG=$(echo "$RESPONSE" | grep -o '"msg"[ ]*:[ ]*"[^"]*"' | cut -d '"' -f 4)
-	output_status "$STATUS_LOG_FILE" "Get authorize url failed: $MSG"
+	output_status "$STATUS_LOG_FILE" "Get authorize url failed: $MSG" >/dev/null
 	printf "%s\n" "${MSG:-Get authorize url failed}" >&2
 	exit 1
 fi
