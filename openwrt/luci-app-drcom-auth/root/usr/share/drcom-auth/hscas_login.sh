@@ -23,9 +23,21 @@ FAIL_N=$(sed -n 's/.*name="failN" value="\([^"]*\)".*/\1/p' "$LOGIN_PAGE_CONTENT
 CURRENT_MENU=${CURRENT_MENU:-1}
 FAIL_N=${FAIL_N:-0}
 
-output_status "$LOG_FILE" "Fetching HSCAS RSA public key"
-if ! curl -L -b "$COOKIE_FILE" -H "User-Agent: $USER_AGENT" -s -o "$PUBLIC_KEY_FILE" "$HSCAS_PUBLIC_KEY_URL"; then
-	output_status "$STATUS_LOG_FILE" "HSCAS login failed: public key request failed"
+if [ ! -s "$PUBLIC_KEY_FILE" ] && [ -s "$DEFAULT_PUBLIC_KEY_FILE" ]; then
+	cp "$DEFAULT_PUBLIC_KEY_FILE" "$PUBLIC_KEY_FILE"
+	chmod 600 "$PUBLIC_KEY_FILE"
+fi
+
+if [ ! -s "$PUBLIC_KEY_FILE" ]; then
+	output_status "$LOG_FILE" "Fetching HSCAS RSA public key"
+	if ! curl -L -b "$COOKIE_FILE" -H "User-Agent: $USER_AGENT" -s -o "$PUBLIC_KEY_FILE" "$HSCAS_PUBLIC_KEY_URL"; then
+		output_status "$STATUS_LOG_FILE" "HSCAS login failed: public key request failed"
+		exit 1
+	fi
+fi
+
+if ! grep -q "BEGIN PUBLIC KEY" "$PUBLIC_KEY_FILE"; then
+	output_status "$STATUS_LOG_FILE" "HSCAS login failed: invalid public key"
 	exit 1
 fi
 

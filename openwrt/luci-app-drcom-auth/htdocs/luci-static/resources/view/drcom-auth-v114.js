@@ -36,6 +36,13 @@ return view.extend({
 				enable: '启用联网检测',
 				username: '账号',
 				password: '密码',
+				publicKeyUrl: '公钥地址',
+				updatePublicKey: '更新公钥',
+				publicKeyStatus: '公钥状态',
+				publicKeyIdle: '未更新',
+				publicKeyUpdating: '更新中...',
+				publicKeyDone: '公钥已更新',
+				publicKeyFailed: '公钥更新失败',
 				wanPort: 'WAN 接口',
 				deviceType: '设备类型',
 				pc: '电脑',
@@ -74,6 +81,13 @@ return view.extend({
 				enable: 'Enable Network Check',
 				username: 'Username',
 				password: 'Password',
+				publicKeyUrl: 'Public Key URL',
+				updatePublicKey: 'Update Public Key',
+				publicKeyStatus: 'Public Key Status',
+				publicKeyIdle: 'Not updated',
+				publicKeyUpdating: 'Updating...',
+				publicKeyDone: 'Public key updated',
+				publicKeyFailed: 'Public key update failed',
 				wanPort: 'WAN Interface',
 				deviceType: 'Device Type',
 				pc: 'PC',
@@ -188,6 +202,40 @@ return view.extend({
 		o.password = true;
 		o.rmempty = false;
 
+		o = s.option(form.Value, 'hscas_public_key_url', tr('publicKeyUrl'));
+		o.placeholder = 'https://hscas.hstc.edu.cn/cas/jwt/publicKey';
+		o.default = 'https://hscas.hstc.edu.cn/cas/jwt/publicKey';
+		o.rmempty = false;
+
+		o = s.option(form.Button, '_public_key', tr('updatePublicKey'));
+		o.inputtitle = tr('updatePublicKey');
+		o.inputstyle = 'apply';
+		o.onclick = function() {
+			var node = document.getElementById('drcom-public-key-status');
+			if (node)
+				node.textContent = tr('publicKeyUpdating');
+
+			return fs.exec('/etc/init.d/drcom_auth', [ 'public_key' ]).then(function(res) {
+				var node = document.getElementById('drcom-public-key-status');
+				var message = execMessage(res) || tr('publicKeyDone');
+				if (node)
+					node.textContent = tr('publicKeyDone') + ': ' + message;
+				ui.addNotification(null, E('p', message));
+			}).catch(function(e) {
+				var node = document.getElementById('drcom-public-key-status');
+				var message = execMessage(e) || tr('publicKeyFailed');
+				if (node)
+					node.textContent = tr('publicKeyFailed') + ': ' + message;
+				ui.addNotification(null, E('p', message), 'error');
+			});
+		};
+
+		o = s.option(form.DummyValue, '_public_key_status', tr('publicKeyStatus'));
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return '<span id="drcom-public-key-status" class="drcom-result">' + tr('publicKeyIdle') + '</span>';
+		};
+
 		o = s.option(form.Button, '_auth', tr('auth'));
 		o.inputtitle = tr('auth');
 		o.inputstyle = 'apply';
@@ -203,9 +251,10 @@ return view.extend({
 				ui.addNotification(null, E('p', tr('authDone')));
 			}).catch(function(e) {
 				var node = document.getElementById('drcom-auth-status');
+				var message = execMessage(e) || tr('authFailed');
 				if (node)
-					node.textContent = tr('authFailed') + ': ' + e.message;
-				ui.addNotification(null, E('p', e.message), 'error');
+					node.textContent = tr('authFailed') + ': ' + message;
+				ui.addNotification(null, E('p', message), 'error');
 			});
 		};
 

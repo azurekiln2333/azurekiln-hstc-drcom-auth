@@ -3,9 +3,10 @@
 START=95
 STOP=10
 USE_PROCD=1
-EXTRA_COMMANDS="authorize ticket"
+EXTRA_COMMANDS="authorize ticket public_key"
 EXTRA_HELP="	authorize	Get the Dr.COM authorize URL only
-	ticket	Get an internet ticket immediately"
+	ticket	Get an internet ticket immediately
+	public_key	Update the cached HSCAS RSA public key"
 
 APP_DIR="/usr/share/drcom-auth"
 CONFIG_FILE="$APP_DIR/config.sh"
@@ -19,7 +20,7 @@ shell_quote() {
 }
 
 write_config() {
-	local enabled wan_port username password drcom_server_ip hscas_url
+	local enabled wan_port username password drcom_server_ip hscas_url hscas_public_key_url
 	local mac_type user_agent ping_host
 
 	config_load drcom_auth
@@ -29,6 +30,7 @@ write_config() {
 	uci_get password password ""
 	uci_get drcom_server_ip drcom_server_ip 192.168.2.34
 	uci_get hscas_url hscas_url https://hscas.hstc.edu.cn
+	uci_get hscas_public_key_url hscas_public_key_url "$hscas_url/cas/jwt/publicKey"
 	uci_get mac_type mac_type 2
 	uci_get user_agent user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
 	uci_get ping_host ping_host baidu.com
@@ -45,7 +47,7 @@ DRCOM_SERVER_IP=$(shell_quote "$drcom_server_ip")
 HSCAS_URL=$(shell_quote "$hscas_url")
 VERIFY_URL="http://\$DRCOM_SERVER_IP/"
 HSCAS_LOGIN_URL="\$HSCAS_URL/cas/login"
-HSCAS_PUBLIC_KEY_URL="\$HSCAS_URL/cas/jwt/publicKey"
+HSCAS_PUBLIC_KEY_URL=$(shell_quote "$hscas_public_key_url")
 
 EPORTAL_API="http://\$DRCOM_SERVER_IP:801/eportal/portal"
 AUTHORIZATION_API="http://\$DRCOM_SERVER_IP:801/eportal/portal/cas/create"
@@ -74,6 +76,7 @@ COOKIE_DIR="\$SCRIPT_DIR/info"
 COOKIE_FILE="\$COOKIE_DIR/cookie.txt"
 HEADERS_FILE="\$COOKIE_DIR/headers.txt"
 PUBLIC_KEY_FILE="\$COOKIE_DIR/public_key.pem"
+DEFAULT_PUBLIC_KEY_FILE="\$SCRIPT_DIR/public_key.pem"
 
 RESPONSE_DIR="\$SCRIPT_DIR/responses"
 POST_RESPONSE_CONTENT="\$RESPONSE_DIR/post_response.html"
@@ -129,6 +132,25 @@ authorize() {
 ticket() {
 	write_config >/dev/null
 	/bin/sh "$APP_DIR/auto_login_and_verify.sh" >/dev/null
+}
+
+public_key() {
+	local tmp
+
+	write_config >/dev/null
+	. "$CONFIG_FILE"
+	tmp="$PUBLIC_KEY_FILE.tmp"
+
+	if curl -L -H "User-Agent: $USER_AGENT" -s -o "$tmp" "$HSCAS_PUBLIC_KEY_URL" && grep -q "BEGIN PUBLIC KEY" "$tmp"; then
+		mv "$tmp" "$PUBLIC_KEY_FILE"
+		chmod 600 "$PUBLIC_KEY_FILE"
+		printf "%s\n" "Updated public key: $PUBLIC_KEY_FILE"
+		return 0
+	fi
+
+	rm -f "$tmp"
+	printf "%s\n" "Update public key failed: $HSCAS_PUBLIC_KEY_URL" >&2
+	return 1
 }
 
 boot() {
