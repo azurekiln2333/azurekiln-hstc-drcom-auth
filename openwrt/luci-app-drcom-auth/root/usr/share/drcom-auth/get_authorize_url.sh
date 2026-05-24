@@ -5,11 +5,18 @@ CONFIG_FILE="$SCRIPT_DIR/config.sh"
 if [ -f "$CONFIG_FILE" ]; then
 	. "$CONFIG_FILE"
 else
-	echo "The config.sh is not found"
+	printf "%s\n" "The config.sh is not found" >&2
 	exit 1
 fi
 
-output_status "$STATUS_LOG_FILE" "Sending identity_login request: $AUTHORIZATION_API" >/dev/null
+log_status() {
+	local message="$1"
+	mkdir -p "$(dirname "$STATUS_LOG_FILE")"
+	printf "%s: %s\n" "$(date)" "$message" >> "$STATUS_LOG_FILE"
+	logger "drcom-auth: $message"
+}
+
+log_status "Sending identity_login request: $AUTHORIZATION_API"
 RESPONSE=$(curl -s -G "$AUTHORIZATION_API" \
 	--data-urlencode "login_method=$LOGIN_METHOD" \
 	--data-urlencode "wlan_user_ip=$TERM_IP" \
@@ -21,21 +28,21 @@ RESPONSE=$(curl -s -G "$AUTHORIZATION_API" \
 	--data-urlencode "mac_type=$MAC_TYPE" \
 	--data-urlencode "jsVersion=$JS_VERSION")
 
-output_status "$STATUS_LOG_FILE" "[response] $RESPONSE" >/dev/null
+log_status "[response] $RESPONSE"
 JSON=$(echo "$RESPONSE" | sed -e 's/^jsonpReturn(//' -e 's/);$//')
-output_status "$STATUS_LOG_FILE" "[JSON] $JSON" >/dev/null
+log_status "[JSON] $JSON"
 
 RESULT=$(echo "$JSON" | grep -o '"result"[ ]*:[ ]*[^,}]*' | cut -d ':' -f 2 | tr -d ' "')
-output_status "$STATUS_LOG_FILE" "[RESULT] $RESULT" >/dev/null
+log_status "[RESULT] $RESULT"
 
 if [ "$RESULT" = "1" ] || [ "$RESULT" = "ok" ]; then
 	AUTHORIZE_URI=$(echo "$JSON" | sed -n 's/.*"authorize_uri"[ ]*:[ ]*"\([^"]*\)".*/\1/p')
 	AUTHORIZE_URI=$(echo "$AUTHORIZE_URI" | sed 's#\\/#/#g')
-	output_status "$STATUS_LOG_FILE" "Successfully obtained authorize URL: $AUTHORIZE_URI" >/dev/null
+	log_status "Successfully obtained authorize URL: $AUTHORIZE_URI"
 	printf "%s\n" "$AUTHORIZE_URI"
 else
 	MSG=$(echo "$RESPONSE" | grep -o '"msg"[ ]*:[ ]*"[^"]*"' | cut -d '"' -f 4)
-	output_status "$STATUS_LOG_FILE" "Get authorize url failed: $MSG" >/dev/null
+	log_status "Get authorize url failed: $MSG"
 	printf "%s\n" "${MSG:-Get authorize url failed}" >&2
 	exit 1
 fi
