@@ -146,6 +146,9 @@ return view.extend({
 			return fs.exec('/etc/init.d/drcom_auth', [ 'authorize' ]).then(function(res) {
 				var node = document.getElementById('drcom-authorize-status');
 				var output = (res && (res.stdout || res.stderr)) ? (res.stdout || res.stderr).trim() : '';
+				var urls = output.match(/https?:\/\/\S+/g);
+				if (urls && urls.length)
+					output = urls[urls.length - 1];
 				if (node)
 					node.textContent = output ? tr('authorizeDone') + ': ' + output : tr('authorizeIdle');
 			}).catch(function(e) {

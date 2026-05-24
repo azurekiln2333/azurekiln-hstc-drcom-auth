@@ -85,7 +85,7 @@ output_status() {
 	local log_file="\$1"
 	local message="\$2"
 	mkdir -p "\$(dirname "\$log_file")"
-	echo "\$(date): \$message" | tee -a "\$log_file"
+	echo "\$(date): \$message" >> "\$log_file"
 	logger "drcom-auth: \$message"
 }
 
