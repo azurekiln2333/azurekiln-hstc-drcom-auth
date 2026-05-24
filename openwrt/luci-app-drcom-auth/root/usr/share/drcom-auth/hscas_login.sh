@@ -41,6 +41,11 @@ if ! grep -q "BEGIN PUBLIC KEY" "$PUBLIC_KEY_FILE"; then
 	exit 1
 fi
 
+if ! command -v openssl >/dev/null 2>&1; then
+	output_status "$STATUS_LOG_FILE" "HSCAS login failed: openssl command is required for RSA password encryption"
+	exit 1
+fi
+
 encrypt_password() {
 	local encrypted
 	if encrypted=$(printf "%s" "$PASSWORD" | openssl pkeyutl -encrypt -pubin -inkey "$PUBLIC_KEY_FILE" -pkeyopt rsa_padding_mode:pkcs1 2>/dev/null | base64 | tr -d '\r\n'); then

@@ -6,14 +6,15 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 ## Current Package State
 
-- Current package: `release/luci-app-drcom-auth_1.0.17-1_all.ipk`
-- SHA256: `c8824cd9ca7a033187f5abfdc1df47920385a8b2e8bd3223f9d889feaf7bd8ba`
-- Current package source version: `1.0.17-1`
+- Current package: `release/luci-app-drcom-auth_1.0.18-1_all.ipk`
+- SHA256: `f34311074346511276525f12a1806f6c3abe532b3d363468cd9709ccfef46dff`
+- Current package source version: `1.0.18-1`
 - Main package path: `openwrt/luci-app-drcom-auth`
 - Local packaging script: `openwrt/package_ipk.ps1`
 
 Recent relevant commits:
 
+- pending commit: remove hard `openssl-util` package dependency
 - `df17899 feat(luci): add CAS public key refresh`
 - `df9b939 fix(auth): fetch CAS execution and encrypt password`
 - `f27c5a4 fix(luci): clarify web authorize step errors`
@@ -137,7 +138,7 @@ Implemented in `hscas_login.sh`:
 8. If HTTP `302`, read `Location` from headers and verify ticket.
 9. If HTTP `200` and success markers exist, GET `AUTHORIZE_URI` again to obtain ticket.
 
-The package now depends on `openssl-util`.
+The package does not hard-depend on `openssl-util` because some OpenWrt feeds do not expose that package name. Runtime CAS login still requires an `openssl` command for RSA password encryption. If `openssl` is missing, `hscas_login.sh` exits with a clear error.
 
 ## Public Key Handling
 
@@ -237,6 +238,7 @@ tar -xOf .\release\ipk-debug\data.tar.gz ./usr/share/drcom-auth/hscas_login.sh
   - `/etc/init.d/drcom_auth ticket`
   - LuCI buttons for authorize/public key/auth
 - If CAS returns captcha, MFA, account-lock, or risk-control pages, the current script may need additional detection and user-facing error messages.
+- If `openssl` is missing on the target OpenWrt build, install the package that provides the `openssl` command for that firmware/feed. Package names may differ by OpenWrt version.
 - If `openssl pkeyutl` is unavailable in a target OpenWrt build, fallback `rsautl` is present but should still be verified on-device.
 
 ## Current Dirty Worktree Caveat

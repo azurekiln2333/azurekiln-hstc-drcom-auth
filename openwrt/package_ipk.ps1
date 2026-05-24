@@ -2,7 +2,7 @@ param(
     [string]$PackageRoot = ".\luci-app-drcom-auth",
     [string]$OutputDir = "..\release",
     [string]$PackageName = "luci-app-drcom-auth",
-    [string]$Version = "1.0.17-1",
+    [string]$Version = "1.0.18-1",
     [string]$Architecture = "all"
 )
 
@@ -193,7 +193,7 @@ Architecture: $Architecture
 Maintainer: azurekiln
 Section: luci
 Priority: optional
-Depends: libc, luci-base, curl, openssl-util
+Depends: libc, luci-base, curl
 Installed-Size: $installedSize
 Description: LuCI configuration page for HSTC Dr.COM authentication
 "@
