@@ -17,9 +17,10 @@ return view.extend({
 				title: 'Dr.COM 认证',
 				desc: '配置校园网认证与自动重连。',
 				basic: '基础设置',
-				authorize: '授权链接获取',
-				getAuthorize: '获取授权链接',
-				authorizeStatus: '授权链接状态',
+				authorize: '网页授权链接获取',
+				authorizeStep: '上网第一步',
+				getAuthorize: '获取网页授权链接',
+				authorizeStatus: '网页授权链接状态',
 				authorizeIdle: '未获取',
 				authorizeRunning: '获取中...',
 				authorizeDone: '获取成功',
@@ -54,9 +55,10 @@ return view.extend({
 				title: 'Dr.COM Auth',
 				desc: 'Configure campus network authentication and automatic reconnect.',
 				basic: 'Basic Settings',
-				authorize: 'Authorize URL',
-				getAuthorize: 'Get Authorize URL',
-				authorizeStatus: 'Authorize URL Status',
+				authorize: 'Web Authorize URL',
+				authorizeStep: 'Step 1: get online',
+				getAuthorize: 'Get Web Authorize URL',
+				authorizeStatus: 'Web Authorize URL Status',
 				authorizeIdle: 'Not requested',
 				authorizeRunning: 'Requesting...',
 				authorizeDone: 'Success',
@@ -92,6 +94,13 @@ return view.extend({
 		lang = window.localStorage.getItem('drcom-auth-lang') || ((navigator.language || '').indexOf('zh') === 0 ? 'zh' : 'en');
 		tr = function(key) {
 			return dict[lang][key] || key;
+		};
+		var execMessage = function(obj) {
+			return [
+				obj && obj.stdout,
+				obj && obj.stderr,
+				obj && obj.message
+			].filter(function(v) { return v; }).join('\n').trim();
 		};
 
 		m = new form.Map('drcom_auth', tr('title'), tr('desc'));
@@ -134,6 +143,7 @@ return view.extend({
 		s = m.section(form.TypedSection, 'drcom_auth', tr('authorize'));
 		s.anonymous = true;
 		s.addremove = false;
+		s.description = tr('authorizeStep');
 
 		o = s.option(form.Button, '_authorize', tr('getAuthorize'));
 		o.inputtitle = tr('getAuthorize');
@@ -153,9 +163,10 @@ return view.extend({
 					node.textContent = output ? tr('authorizeDone') + ': ' + output : tr('authorizeIdle');
 			}).catch(function(e) {
 				var node = document.getElementById('drcom-authorize-status');
+				var message = execMessage(e) || tr('authorizeFailed');
 				if (node)
-					node.textContent = tr('authorizeFailed') + ': ' + e.message;
-				ui.addNotification(null, E('p', e.message), 'error');
+					node.textContent = tr('authorizeFailed') + ': ' + message;
+				ui.addNotification(null, E('p', message), 'error');
 			});
 		};
 
