@@ -2,7 +2,7 @@ param(
     [string]$PackageRoot = ".\luci-app-drcom-auth",
     [string]$OutputDir = "..\release",
     [string]$PackageName = "luci-app-drcom-auth",
-    [string]$Version = "1.0.1-1",
+    [string]$Version = "1.0.6-1",
     [string]$Architecture = "all"
 )
 
@@ -30,7 +30,7 @@ function New-TarBytes {
         if ($entry.Type -eq "file") {
             $data = [System.IO.File]::ReadAllBytes($entry.Source)
         } elseif ($entry.Type -eq "content") {
-            $data = [System.Text.Encoding]::ASCII.GetBytes($entry.Content)
+            $data = [System.Text.Encoding]::UTF8.GetBytes($entry.Content)
         }
 
         $header = [byte[]]::new(512)
@@ -169,9 +169,18 @@ foreach ($file in $rootFiles) {
     }
 }
 
-$viewSource = Join-Path $packageRootPath "htdocs\luci-static\resources\view\drcom-auth.js"
-$viewContent = Convert-ToLf ([System.IO.File]::ReadAllText($viewSource))
-$dataEntries += @{ Name = "./www/luci-static/resources/view/drcom-auth.js"; Type = "content"; Content = $viewContent; Mode = 644 }
+$htdocsDir = Join-Path $packageRootPath "htdocs"
+$htdocsFiles = Get-ChildItem -LiteralPath $htdocsDir -Recurse -File
+foreach ($file in $htdocsFiles) {
+    $relative = $file.FullName.Substring($htdocsDir.Length).TrimStart("\", "/")
+    $packagePath = "www/" + (Convert-ToUnixPath $relative)
+    if (Test-IsTextPackagePath $packagePath) {
+        $content = Convert-ToLf ([System.IO.File]::ReadAllText($file.FullName))
+        $dataEntries += @{ Name = "./$packagePath"; Type = "content"; Content = $content; Mode = 644 }
+    } else {
+        $dataEntries += @{ Name = "./$packagePath"; Type = "file"; Source = $file.FullName; Mode = 644 }
+    }
+}
 
 $dataTar = New-TarBytes $dataEntries
 $dataTarGz = Compress-Gzip $dataTar

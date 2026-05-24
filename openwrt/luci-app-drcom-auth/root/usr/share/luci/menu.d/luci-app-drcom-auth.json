@@ -1,9 +1,9 @@
 {
 	"admin/services/drcom-auth": {
-		"title": "Dr.COM Auth",
+		"title": "Dr.COM",
 		"action": {
 			"type": "view",
-			"path": "drcom-auth"
+			"path": "drcom-auth-v106"
 		},
 		"depends": {
 			"acl": [ "luci-app-drcom-auth" ]
