@@ -45,6 +45,7 @@ DRCOM_SERVER_IP=$(shell_quote "$drcom_server_ip")
 HSCAS_URL=$(shell_quote "$hscas_url")
 VERIFY_URL="http://\$DRCOM_SERVER_IP/"
 HSCAS_LOGIN_URL="\$HSCAS_URL/cas/login"
+HSCAS_PUBLIC_KEY_URL="\$HSCAS_URL/cas/jwt/publicKey"
 
 EPORTAL_API="http://\$DRCOM_SERVER_IP:801/eportal/portal"
 AUTHORIZATION_API="http://\$DRCOM_SERVER_IP:801/eportal/portal/cas/create"
@@ -61,8 +62,6 @@ MAC_TYPE=$(shell_quote "$mac_type")
 
 USERNAME=$(shell_quote "$username")
 PASSWORD=$(shell_quote "$password")
-EXECUTION=""
-LOGIN_POSTBODY="username=\$USERNAME&password=\$PASSWORD&currentMenu=1&failN=0&execution=\$EXECUTION&_eventId=submit&geolocation=&submit=%E7%99%BB%E5%BD%95"
 
 PING_HOST=$(shell_quote "$ping_host")
 
@@ -74,12 +73,14 @@ STATUS_LOG_FILE="\$LOG_DIR/drcom_status_log.txt"
 COOKIE_DIR="\$SCRIPT_DIR/info"
 COOKIE_FILE="\$COOKIE_DIR/cookie.txt"
 HEADERS_FILE="\$COOKIE_DIR/headers.txt"
+PUBLIC_KEY_FILE="\$COOKIE_DIR/public_key.pem"
 
 RESPONSE_DIR="\$SCRIPT_DIR/responses"
 POST_RESPONSE_CONTENT="\$RESPONSE_DIR/post_response.html"
 GET_RESPONSE_CONTENT="\$RESPONSE_DIR/get_response.html"
 THIRD_GET_RESPONSE_CONTENT="\$RESPONSE_DIR/third_get_response.html"
 CHECK_LOGIN_CONTENT="\$RESPONSE_DIR/check_hotspot_content.html"
+LOGIN_PAGE_CONTENT="\$RESPONSE_DIR/login_page.html"
 
 output_status() {
 	local log_file="\$1"
