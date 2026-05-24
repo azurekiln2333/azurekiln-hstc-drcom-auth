@@ -6,14 +6,15 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 ## Current Package State
 
-- Current package: `release/luci-app-drcom-auth_1.0.18-1_all.ipk`
-- SHA256: `f34311074346511276525f12a1806f6c3abe532b3d363468cd9709ccfef46dff`
-- Current package source version: `1.0.18-1`
+- Current package: `release/luci-app-drcom-auth_1.0.19-1_all.ipk`
+- SHA256: `fd66fefdaad9ac1956524ff4dc905a042f1068556962596945c6e87459c1f4bc`
+- Current package source version: `1.0.19-1`
 - Main package path: `openwrt/luci-app-drcom-auth`
 - Local packaging script: `openwrt/package_ipk.ps1`
 
 Recent relevant commits:
 
+- pending commit: fix public key update status handling
 - `1866f45 fix(package): remove hard openssl util dependency`
 - `bf2c12c docs: add CAS auth research notes`
 - `df17899 feat(luci): add CAS public key refresh`
@@ -243,6 +244,8 @@ The UI uses these sections:
 Failure display was improved:
 
 - Authorize and public key failures now show stdout/stderr/message where available.
+- Public key refresh no longer prefixes a failed command result with `公钥已更新`; failures are shown as `公钥更新失败`.
+- Public key refresh backend reports HTTP status on failure, for example `Update public key failed: ... (HTTP 403)`.
 - This helps expose script-level errors instead of only LuCI generic errors.
 
 ## Important Commands

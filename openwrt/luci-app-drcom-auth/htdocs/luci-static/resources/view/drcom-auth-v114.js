@@ -116,6 +116,9 @@ return view.extend({
 				obj && obj.message
 			].filter(function(v) { return v; }).join('\n').trim();
 		};
+		var execFailed = function(obj, message) {
+			return (obj && obj.code) || /(^|\n).*failed:/i.test(message || '');
+		};
 
 		m = new form.Map('drcom_auth', tr('title'), tr('desc'));
 		compactStyle = E('style', {}, [
@@ -218,9 +221,10 @@ return view.extend({
 			return fs.exec('/etc/init.d/drcom_auth', [ 'public_key' ]).then(function(res) {
 				var node = document.getElementById('drcom-public-key-status');
 				var message = execMessage(res) || tr('publicKeyDone');
+				var failed = execFailed(res, message);
 				if (node)
-					node.textContent = tr('publicKeyDone') + ': ' + message;
-				ui.addNotification(null, E('p', message));
+					node.textContent = (failed ? tr('publicKeyFailed') : tr('publicKeyDone')) + ': ' + message;
+				ui.addNotification(null, E('p', message), failed ? 'error' : undefined);
 			}).catch(function(e) {
 				var node = document.getElementById('drcom-public-key-status');
 				var message = execMessage(e) || tr('publicKeyFailed');
