@@ -10,16 +10,21 @@ return view.extend({
 	},
 
 	render: function(data) {
-		var m, s, o, compactStyle, lang, tr, toolbar;
+		var m, s, o, compactStyle, lang, tr;
 		var isEnabled = data.trim() === 'enabled';
 		var dict = {
 			zh: {
 				title: 'Dr.COM 认证',
 				desc: '配置校园网认证与自动重连。',
-				basic: '基础认证',
+				basic: '基础设置',
+				cas: 'CAS 认证',
 				network: '联网检测',
-				ticket: '获取上网门票',
-				ticketDone: '已执行获取上网门票。',
+				auth: '认证',
+				authStatus: '认证状态',
+				authIdle: '未认证',
+				authRunning: '认证中...',
+				authDone: '已执行认证。',
+				authFailed: '认证失败',
 				enable: '启用联网检测',
 				username: '账号',
 				password: '密码',
@@ -34,16 +39,22 @@ return view.extend({
 				serverIp: 'Dr.COM 服务器 IP',
 				casUrl: 'CAS 地址',
 				userAgent: 'User-Agent',
+				language: '语言',
 				langZh: '中文',
 				langEn: 'English'
 			},
 			en: {
 				title: 'Dr.COM Auth',
 				desc: 'Configure campus network authentication and automatic reconnect.',
-				basic: 'Authentication',
+				basic: 'Basic Settings',
+				cas: 'CAS Authentication',
 				network: 'Network Check',
-				ticket: 'Get Internet Ticket',
-				ticketDone: 'Internet ticket request executed.',
+				auth: 'Authenticate',
+				authStatus: 'Authentication Status',
+				authIdle: 'Not authenticated',
+				authRunning: 'Authenticating...',
+				authDone: 'Authentication executed.',
+				authFailed: 'Authentication failed',
 				enable: 'Enable Network Check',
 				username: 'Username',
 				password: 'Password',
@@ -58,6 +69,7 @@ return view.extend({
 				serverIp: 'Dr.COM Server IP',
 				casUrl: 'CAS URL',
 				userAgent: 'User-Agent',
+				language: 'Language',
 				langZh: '中文',
 				langEn: 'English'
 			}
@@ -67,23 +79,6 @@ return view.extend({
 		tr = function(key) {
 			return dict[lang][key] || key;
 		};
-
-		toolbar = E('div', { 'class': 'drcom-auth-toolbar' }, [
-			E('button', {
-				'class': 'btn cbi-button' + (lang === 'zh' ? ' cbi-button-apply' : ''),
-				'click': function() {
-					window.localStorage.setItem('drcom-auth-lang', 'zh');
-					window.location.reload();
-				}
-			}, tr('langZh')),
-			E('button', {
-				'class': 'btn cbi-button' + (lang === 'en' ? ' cbi-button-apply' : ''),
-				'click': function() {
-					window.localStorage.setItem('drcom-auth-lang', 'en');
-					window.location.reload();
-				}
-			}, tr('langEn'))
-		]);
 
 		m = new form.Map('drcom_auth', tr('title'), tr('desc'));
 		compactStyle = E('style', {}, [
@@ -96,33 +91,21 @@ return view.extend({
 			'.drcom-auth-view .cbi-value-field input,.drcom-auth-view .cbi-value-field select,.drcom-auth-view .cbi-value-field textarea,.drcom-auth-view .cbi-value-field .cbi-dropdown{margin-bottom:3px!important}',
 			'.drcom-auth-view .cbi-value-field > *:last-child{margin-bottom:0!important}',
 			'.drcom-auth-view .cbi-value-description{clear:both;margin-top:2px;margin-bottom:0}',
-			'.drcom-auth-view .cbi-button{margin-bottom:3px}',
-			'.drcom-auth-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 8px 0}',
-			'.drcom-auth-toolbar .btn{min-width:74px}'
+			'.drcom-auth-view .cbi-button{margin-bottom:3px}'
 		].join('\n'));
 
 		s = m.section(form.TypedSection, 'drcom_auth', tr('basic'));
 		s.anonymous = true;
 		s.addremove = false;
 
-		o = s.option(form.Button, '_ticket', tr('ticket'));
-		o.inputtitle = tr('ticket');
-		o.inputstyle = 'apply';
-		o.onclick = function() {
-			return fs.exec('/etc/init.d/drcom_auth', [ 'ticket' ]).then(function() {
-				ui.addNotification(null, E('p', tr('ticketDone')));
-			}).catch(function(e) {
-				ui.addNotification(null, E('p', e.message), 'error');
-			});
+		o = s.option(form.DummyValue, '_language', tr('language'));
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return '<select id="drcom-lang-select" class="cbi-input-select">' +
+				'<option value="zh"' + (lang === 'zh' ? ' selected="selected"' : '') + '>' + tr('langZh') + '</option>' +
+				'<option value="en"' + (lang === 'en' ? ' selected="selected"' : '') + '>' + tr('langEn') + '</option>' +
+				'</select>';
 		};
-
-		o = s.option(form.Value, 'username', tr('username'));
-		o.placeholder = '202400000000';
-		o.rmempty = false;
-
-		o = s.option(form.Value, 'password', tr('password'));
-		o.password = true;
-		o.rmempty = false;
 
 		o = s.option(form.Value, 'wan_port', tr('wanPort'));
 		o.placeholder = 'eth1';
@@ -132,6 +115,45 @@ return view.extend({
 		o.value('1', tr('pc'));
 		o.value('2', tr('mobile'));
 		o.default = '2';
+
+		s = m.section(form.TypedSection, 'drcom_auth', tr('cas'));
+		s.anonymous = true;
+		s.addremove = false;
+
+		o = s.option(form.Value, 'username', tr('username'));
+		o.placeholder = '202400000000';
+		o.rmempty = false;
+
+		o = s.option(form.Value, 'password', tr('password'));
+		o.password = true;
+		o.rmempty = false;
+
+		o = s.option(form.Button, '_auth', tr('auth'));
+		o.inputtitle = tr('auth');
+		o.inputstyle = 'apply';
+		o.onclick = function() {
+			var node = document.getElementById('drcom-auth-status');
+			if (node)
+				node.textContent = tr('authRunning');
+
+			return fs.exec('/etc/init.d/drcom_auth', [ 'ticket' ]).then(function() {
+				var node = document.getElementById('drcom-auth-status');
+				if (node)
+					node.textContent = tr('authDone');
+				ui.addNotification(null, E('p', tr('authDone')));
+			}).catch(function(e) {
+				var node = document.getElementById('drcom-auth-status');
+				if (node)
+					node.textContent = tr('authFailed') + ': ' + e.message;
+				ui.addNotification(null, E('p', e.message), 'error');
+			});
+		};
+
+		o = s.option(form.DummyValue, '_auth_status', tr('authStatus'));
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return '<span id="drcom-auth-status">' + tr('authIdle') + '</span>';
+		};
 
 		s = m.section(form.TypedSection, 'drcom_auth', tr('network'));
 		s.anonymous = true;
@@ -168,7 +190,15 @@ return view.extend({
 		o.rmempty = false;
 
 		return m.render().then(function(map) {
-			return E('div', { 'class': 'drcom-auth-view' }, [ compactStyle, toolbar, map ]);
+			var viewNode = E('div', { 'class': 'drcom-auth-view' }, [ compactStyle, map ]);
+			var select = viewNode.querySelector('#drcom-lang-select');
+			if (select) {
+				select.addEventListener('change', function() {
+					window.localStorage.setItem('drcom-auth-lang', select.value);
+					window.location.reload();
+				});
+			}
+			return viewNode;
 		});
 	}
 });
