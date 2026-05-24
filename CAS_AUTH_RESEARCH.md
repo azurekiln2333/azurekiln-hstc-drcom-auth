@@ -4,6 +4,18 @@ Last updated: 2026-05-25
 
 This file records the important context discovered while adapting the OpenWrt LuCI package for HSTC Dr.COM web authorization and CAS login. It intentionally avoids storing real usernames or passwords.
 
+## Quick Resume Summary
+
+- Latest committed package is `1.0.22-1`: `release/luci-app-drcom-auth_1.0.22-1_all.ipk`.
+- The latest UI supports Simplified Chinese, Traditional Chinese, and English.
+- Public key refresh is available in the LuCI CAS section. The cached key is stored at `/usr/share/drcom-auth/info/public_key.pem`.
+- Public key status is deliberately returned by the backend as machine-readable text: `updated<TAB>mtime<TAB>path`. The LuCI frontend translates it into the selected language.
+- CAS login must always fetch a fresh login page and extract `execution`, `currentMenu`, and `failN`; `execution` is session-flow state and cannot be hardcoded.
+- CAS password ciphertext changes every login because browser-side RSA encryption uses randomized padding. This is expected, not a password mutation.
+- Runtime CAS login needs an `openssl` command. On the observed Kwrt feed, install `openssl-util`; `opkg install openssl` is not valid there.
+- Generated runtime files must stay under `/usr/share/drcom-auth`. Do not derive `SCRIPT_DIR` from `$0` inside generated `config.sh`, because init-script commands would otherwise drift into `/etc/info`.
+- The local worktree still has unrelated old `release/` delete/add states. Use `git commit --only <paths...>` for focused commits until that is cleaned up intentionally.
+
 ## Current Package State
 
 - Current package: `release/luci-app-drcom-auth_1.0.22-1_all.ipk`
@@ -14,10 +26,11 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 Recent relevant commits:
 
-- current update: localize public key status and add Traditional Chinese UI
-- current update: persist public key refresh status across LuCI reloads
-- current update: fix generated config path for init-script commands
-- pending commit: fix public key update status handling
+- `44655e1 fix(luci): localize public key status`
+- `0adc5bb fix(luci): persist public key update status`
+- `18d3700 fix(auth): keep runtime paths under app directory`
+- `613802c fix(luci): report public key refresh failures`
+- `fe60ae9 docs: update Kwrt openssl package notes`
 - `1866f45 fix(package): remove hard openssl util dependency`
 - `bf2c12c docs: add CAS auth research notes`
 - `df17899 feat(luci): add CAS public key refresh`
