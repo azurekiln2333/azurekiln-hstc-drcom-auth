@@ -6,14 +6,15 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 ## Current Package State
 
-- Current package: `release/luci-app-drcom-auth_1.0.19-1_all.ipk`
-- SHA256: `fd66fefdaad9ac1956524ff4dc905a042f1068556962596945c6e87459c1f4bc`
-- Current package source version: `1.0.19-1`
+- Current package: `release/luci-app-drcom-auth_1.0.20-1_all.ipk`
+- SHA256: `af58a6736b4e65fef7c12d8f47c42b97c59dd244fc5474ae292700d88fe91e64`
+- Current package source version: `1.0.20-1`
 - Main package path: `openwrt/luci-app-drcom-auth`
 - Local packaging script: `openwrt/package_ipk.ps1`
 
 Recent relevant commits:
 
+- current update: fix generated config path for init-script commands
 - pending commit: fix public key update status handling
 - `1866f45 fix(package): remove hard openssl util dependency`
 - `bf2c12c docs: add CAS auth research notes`
@@ -41,6 +42,11 @@ Runtime-generated files on OpenWrt:
 - Headers: `/usr/share/drcom-auth/info/headers.txt`
 - Logs: `/usr/share/drcom-auth/logs/`
 - Responses: `/usr/share/drcom-auth/responses/`
+
+Important path note:
+
+- `config.sh` must set `SCRIPT_DIR` to the fixed application directory `/usr/share/drcom-auth`.
+- Do not compute it from `$0` inside generated `config.sh`; when `/etc/init.d/drcom_auth` sources the config, `$0` points to the init script and runtime files drift into `/etc/info` or `/etc/responses`.
 
 ## Main Discovery
 

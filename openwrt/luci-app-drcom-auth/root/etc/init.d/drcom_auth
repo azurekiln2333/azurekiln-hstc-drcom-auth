@@ -37,7 +37,7 @@ write_config() {
 
 	mkdir -p "$APP_DIR/logs" "$APP_DIR/info" "$APP_DIR/responses"
 	cat > "$CONFIG_FILE" <<EOF
-SCRIPT_DIR=\$(cd "\$(dirname "\$0")" && pwd)
+SCRIPT_DIR=$(shell_quote "$APP_DIR")
 
 USER_AGENT=$(shell_quote "$user_agent")
 WAN_PORT=$(shell_quote "$wan_port")
@@ -139,6 +139,7 @@ public_key() {
 
 	write_config >/dev/null
 	. "$CONFIG_FILE"
+	mkdir -p "$COOKIE_DIR"
 	tmp="$PUBLIC_KEY_FILE.tmp"
 
 	code=$(curl -L -H "User-Agent: $USER_AGENT" -s -o "$tmp" -w "%{http_code}" "$HSCAS_PUBLIC_KEY_URL")
