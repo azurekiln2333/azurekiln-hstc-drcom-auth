@@ -6,14 +6,15 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 ## Current Package State
 
-- Current package: `release/luci-app-drcom-auth_1.0.20-1_all.ipk`
-- SHA256: `af58a6736b4e65fef7c12d8f47c42b97c59dd244fc5474ae292700d88fe91e64`
-- Current package source version: `1.0.20-1`
+- Current package: `release/luci-app-drcom-auth_1.0.21-1_all.ipk`
+- SHA256: `2ddcc18496e9e039872da642e1e4cccf5d2cc68fbe7962a63eaf1713741818e3`
+- Current package source version: `1.0.21-1`
 - Main package path: `openwrt/luci-app-drcom-auth`
 - Local packaging script: `openwrt/package_ipk.ps1`
 
 Recent relevant commits:
 
+- current update: persist public key refresh status across LuCI reloads
 - current update: fix generated config path for init-script commands
 - pending commit: fix public key update status handling
 - `1866f45 fix(package): remove hard openssl util dependency`
@@ -225,6 +226,20 @@ This updates:
 /usr/share/drcom-auth/info/public_key.pem
 ```
 
+Status command:
+
+```sh
+/etc/init.d/drcom_auth public_key_status
+```
+
+This prints the cached public key update time when the file exists, for example:
+
+```text
+Public key updated: 2026-05-25 07:30:12 (/usr/share/drcom-auth/info/public_key.pem)
+```
+
+LuCI reads this command on page load so the `公钥状态` row survives browser refreshes. If the cached key does not exist, the backend returns an empty success response and the UI shows the localized idle text such as `未更新`.
+
 Rationale:
 
 - Public key is safe to store locally.
@@ -252,6 +267,7 @@ Failure display was improved:
 - Authorize and public key failures now show stdout/stderr/message where available.
 - Public key refresh no longer prefixes a failed command result with `公钥已更新`; failures are shown as `公钥更新失败`.
 - Public key refresh backend reports HTTP status on failure, for example `Update public key failed: ... (HTTP 403)`.
+- Public key status is persisted by reading the cached key file modification time from `/usr/share/drcom-auth/info/public_key.pem`.
 - This helps expose script-level errors instead of only LuCI generic errors.
 
 ## Important Commands
@@ -306,6 +322,7 @@ opkg install --force-reinstall /tmp/upload.ipk
 - Need OpenWrt device testing of:
   - `/etc/init.d/drcom_auth authorize`
   - `/etc/init.d/drcom_auth public_key`
+  - `/etc/init.d/drcom_auth public_key_status`
   - `/etc/init.d/drcom_auth ticket`
   - LuCI buttons for authorize/public key/auth
 - If CAS returns captcha, MFA, account-lock, or risk-control pages, the current script may need additional detection and user-facing error messages.

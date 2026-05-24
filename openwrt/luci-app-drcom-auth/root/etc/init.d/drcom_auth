@@ -3,10 +3,11 @@
 START=95
 STOP=10
 USE_PROCD=1
-EXTRA_COMMANDS="authorize ticket public_key"
+EXTRA_COMMANDS="authorize ticket public_key public_key_status"
 EXTRA_HELP="	authorize	Get the Dr.COM authorize URL only
 	ticket	Get an internet ticket immediately
-	public_key	Update the cached HSCAS RSA public key"
+	public_key	Update the cached HSCAS RSA public key
+	public_key_status	Show cached HSCAS RSA public key status"
 
 APP_DIR="/usr/share/drcom-auth"
 CONFIG_FILE="$APP_DIR/config.sh"
@@ -146,13 +147,28 @@ public_key() {
 	if [ "$code" = "200" ] && grep -q "BEGIN PUBLIC KEY" "$tmp"; then
 		mv "$tmp" "$PUBLIC_KEY_FILE"
 		chmod 600 "$PUBLIC_KEY_FILE"
-		printf "%s\n" "Updated public key: $PUBLIC_KEY_FILE"
+		public_key_status
 		return 0
 	fi
 
 	rm -f "$tmp"
 	printf "%s\n" "Update public key failed: $HSCAS_PUBLIC_KEY_URL (HTTP ${code:-unknown})" >&2
 	return 1
+}
+
+public_key_status() {
+	local mtime
+
+	write_config >/dev/null
+	. "$CONFIG_FILE"
+
+	if [ ! -s "$PUBLIC_KEY_FILE" ]; then
+		return 0
+	fi
+
+	mtime=$(stat -c "%y" "$PUBLIC_KEY_FILE" 2>/dev/null | sed 's/\..*//')
+	[ -n "$mtime" ] || mtime=$(ls -l "$PUBLIC_KEY_FILE" 2>/dev/null | awk '{print $6" "$7" "$8}')
+	printf "%s\n" "Public key updated: $mtime ($PUBLIC_KEY_FILE)"
 }
 
 boot() {

@@ -6,12 +6,22 @@
 
 return view.extend({
 	load: function() {
-		return fs.exec_direct('/etc/init.d/drcom_auth', [ 'enabled' ]).catch(function() { return ''; });
+		return Promise.all([
+			fs.exec_direct('/etc/init.d/drcom_auth', [ 'enabled' ]).catch(function() { return ''; }),
+			fs.exec_direct('/etc/init.d/drcom_auth', [ 'public_key_status' ]).catch(function(e) {
+				return [
+					e && e.stdout,
+					e && e.stderr,
+					e && e.message
+				].filter(function(v) { return v; }).join('\n').trim();
+			})
+		]);
 	},
 
 	render: function(data) {
 		var m, s, o, compactStyle, lang, tr;
-		var isEnabled = data.trim() === 'enabled';
+		var isEnabled = (data[0] || '').trim() === 'enabled';
+		var publicKeyStatus = (data[1] || '').trim();
 		var dict = {
 			zh: {
 				title: 'Dr.COM 认证',
@@ -237,7 +247,7 @@ return view.extend({
 		o = s.option(form.DummyValue, '_public_key_status', tr('publicKeyStatus'));
 		o.rawhtml = true;
 		o.cfgvalue = function() {
-			return '<span id="drcom-public-key-status" class="drcom-result">' + tr('publicKeyIdle') + '</span>';
+			return '<span id="drcom-public-key-status" class="drcom-result">' + (publicKeyStatus || tr('publicKeyIdle')) + '</span>';
 		};
 
 		o = s.option(form.Button, '_auth', tr('auth'));
