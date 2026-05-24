@@ -1,0 +1,122 @@
+#!/bin/sh /etc/rc.common
+
+START=95
+STOP=10
+USE_PROCD=1
+
+APP_DIR="/usr/share/drcom-auth"
+CONFIG_FILE="$APP_DIR/config.sh"
+
+uci_get() {
+	config_get "$1" main "$2" "$3"
+}
+
+shell_quote() {
+	printf "%s" "$1" | sed "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/"
+}
+
+write_config() {
+	local enabled wan_port username password drcom_server_ip hscas_url
+	local mac_type user_agent ping_host
+
+	config_load drcom_auth
+	uci_get enabled enabled 0
+	uci_get wan_port wan_port eth1
+	uci_get username username ""
+	uci_get password password ""
+	uci_get drcom_server_ip drcom_server_ip 192.168.2.34
+	uci_get hscas_url hscas_url https://hscas.hstc.edu.cn
+	uci_get mac_type mac_type 2
+	uci_get user_agent user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
+	uci_get ping_host ping_host baidu.com
+
+	mkdir -p "$APP_DIR/logs" "$APP_DIR/info" "$APP_DIR/responses"
+	cat > "$CONFIG_FILE" <<EOF
+SCRIPT_DIR=\$(cd "\$(dirname "\$0")" && pwd)
+
+USER_AGENT=$(shell_quote "$user_agent")
+WAN_PORT=$(shell_quote "$wan_port")
+WAN_IP_ADDRESS=\$(ifconfig "\$WAN_PORT" 2>/dev/null | awk '/inet addr:/ { sub(/addr:/, "", \$2); print \$2; exit } /inet / { print \$2; exit }')
+
+DRCOM_SERVER_IP=$(shell_quote "$drcom_server_ip")
+HSCAS_URL=$(shell_quote "$hscas_url")
+VERIFY_URL="http://\$DRCOM_SERVER_IP/"
+HSCAS_LOGIN_URL="\$HSCAS_URL/cas/login"
+
+EPORTAL_API="http://\$DRCOM_SERVER_IP:801/eportal/portal"
+AUTHORIZATION_API="http://\$DRCOM_SERVER_IP:801/eportal/portal/cas/create"
+
+LOGIN_METHOD="1"
+TERM_IP="\$WAN_IP_ADDRESS"
+TERM_IPV6=""
+TERM_MAC=\$(cat "/sys/class/net/\$WAN_PORT/address" 2>/dev/null | tr '[:lower:]' '[:upper:]')
+WLAN_AC_IP="10.10.10.10"
+WLAN_AC_NAME="AC001"
+AUTHEX_ENABLE="1"
+JS_VERSION="4.X"
+MAC_TYPE=$(shell_quote "$mac_type")
+
+USERNAME=$(shell_quote "$username")
+PASSWORD=$(shell_quote "$password")
+EXECUTION=""
+LOGIN_POSTBODY="username=\$USERNAME&password=\$PASSWORD&currentMenu=1&failN=0&execution=\$EXECUTION&_eventId=submit&geolocation=&submit=%E7%99%BB%E5%BD%95"
+
+PING_HOST=$(shell_quote "$ping_host")
+
+LOG_DIR="\$SCRIPT_DIR/logs"
+LOG_FILE="\$LOG_DIR/drcom_log.txt"
+PING_LOG_FILE="\$LOG_DIR/drcom_ping_log.txt"
+STATUS_LOG_FILE="\$LOG_DIR/drcom_status_log.txt"
+
+COOKIE_DIR="\$SCRIPT_DIR/info"
+COOKIE_FILE="\$COOKIE_DIR/cookie.txt"
+HEADERS_FILE="\$COOKIE_DIR/headers.txt"
+
+RESPONSE_DIR="\$SCRIPT_DIR/responses"
+POST_RESPONSE_CONTENT="\$RESPONSE_DIR/post_response.html"
+GET_RESPONSE_CONTENT="\$RESPONSE_DIR/get_response.html"
+THIRD_GET_RESPONSE_CONTENT="\$RESPONSE_DIR/third_get_response.html"
+CHECK_LOGIN_CONTENT="\$RESPONSE_DIR/check_hotspot_content.html"
+
+output_status() {
+	local log_file="\$1"
+	local message="\$2"
+	mkdir -p "\$(dirname "\$log_file")"
+	echo "\$(date): \$message" | tee -a "\$log_file"
+	logger "drcom-auth: \$message"
+}
+
+output_status "\$LOG_FILE" "Current directory: \$SCRIPT_DIR"
+output_status "\$LOG_FILE" "Current WAN PORT: \$WAN_PORT"
+output_status "\$LOG_FILE" "Current WAN IP address: \$WAN_IP_ADDRESS"
+output_status "\$LOG_FILE" "Current Username: \$USERNAME"
+EOF
+	chmod 600 "$CONFIG_FILE"
+}
+
+start_service() {
+	local enabled check_interval
+
+	config_load drcom_auth
+	config_get_bool enabled main enabled 0
+	[ "$enabled" -eq 1 ] || return 0
+	config_get check_interval main check_interval 60
+
+	write_config
+
+	procd_open_instance
+	procd_set_param command /bin/sh -c "while true; do /bin/sh \"$APP_DIR/check_network.sh\"; sleep \"$check_interval\"; done"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+reload_service() {
+	stop
+	start
+}
+
+boot() {
+	start
+}

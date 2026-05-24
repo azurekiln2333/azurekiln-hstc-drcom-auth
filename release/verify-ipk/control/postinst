@@ -1,0 +1,6 @@
+#!/bin/sh
+[ -n "$IPKG_INSTROOT" ] || {
+	chmod 755 /etc/init.d/drcom_auth 2>/dev/null || true
+	chmod 755 /usr/share/drcom-auth/*.sh 2>/dev/null || true
+}
+exit 0

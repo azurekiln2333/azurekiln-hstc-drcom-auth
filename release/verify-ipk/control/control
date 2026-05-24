@@ -1,0 +1,8 @@
+Package: luci-app-drcom-auth
+Version: 1.0.0-1
+Architecture: all
+Maintainer: azurekiln
+Section: luci
+Priority: optional
+Depends: libc, luci-base, curl
+Description: LuCI configuration page for HSTC Dr.COM authentication
