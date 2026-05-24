@@ -1,1 +1,0 @@
-3e3cf93241ed19e06c1c106fc3bc0c685270612dd97b4afe3b8bcb9a12cdf58c *luci-app-drcom-auth_1.0.11-1_all.ipk
