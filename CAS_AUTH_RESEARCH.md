@@ -14,7 +14,8 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 Recent relevant commits:
 
-- pending commit: remove hard `openssl-util` package dependency
+- `1866f45 fix(package): remove hard openssl util dependency`
+- `bf2c12c docs: add CAS auth research notes`
 - `df17899 feat(luci): add CAS public key refresh`
 - `df9b939 fix(auth): fetch CAS execution and encrypt password`
 - `f27c5a4 fix(luci): clarify web authorize step errors`
@@ -140,6 +141,51 @@ Implemented in `hscas_login.sh`:
 
 The package does not hard-depend on `openssl-util` because some OpenWrt feeds do not expose that package name. Runtime CAS login still requires an `openssl` command for RSA password encryption. If `openssl` is missing, `hscas_login.sh` exits with a clear error.
 
+## Kwrt / OpenWrt Device Notes
+
+Test device observed from SSH banner:
+
+- Firmware: `Kwrt 03.14.2026 by Kiddin'`
+- Feed URLs: `https://dl.openwrt.ai/releases/25.12/...`
+- Target: `x86/64`
+- Kernel/feed path shown by opkg: `6.12.71`
+- Router LAN IP: `10.0.0.1`
+- WAN IP during testing: `192.168.104.112`
+
+Important package discovery:
+
+- `which openssl` initially returned nothing.
+- `opkg install openssl` failed with `Unknown package 'openssl'`.
+- `opkg list | grep -Ei '^openssl|openssl.*util|libopenssl'` showed:
+  - `openssl-util - 3.5.6-r1`
+  - `libopenssl3 - 3.5.6-r1`
+  - other OpenSSL-related library/provider packages
+- Conclusion: on this Kwrt feed, the package that should provide `/usr/bin/openssl` is `openssl-util`, not `openssl`.
+
+Recommended device commands:
+
+```sh
+opkg update
+opkg install openssl-util
+which openssl
+openssl version
+```
+
+Then install or reinstall the LuCI package:
+
+```sh
+opkg install /tmp/upload.ipk
+opkg install --force-reinstall /tmp/upload.ipk
+```
+
+Why the LuCI package does not depend on `openssl-util` anymore:
+
+- Earlier package `1.0.17-1` had `Depends: libc, luci-base, curl, openssl-util`.
+- The device initially reported `pkg_hash_check_unresolved: cannot find dependency openssl-util`.
+- Later `opkg update` showed `openssl-util` exists in the configured feeds.
+- To keep the package installable even when a feed lacks that exact package name, `1.0.18-1` removed the hard dependency.
+- Runtime auth still requires an `openssl` executable; missing `openssl` is now reported during CAS auth instead of blocking LuCI package installation.
+
 ## Public Key Handling
 
 The current public key is bundled in:
@@ -227,6 +273,22 @@ Inspect package contents:
 tar -tf .\release\ipk-debug\data.tar.gz
 tar -xOf .\release\ipk-debug\control.tar.gz ./control
 tar -xOf .\release\ipk-debug\data.tar.gz ./usr/share/drcom-auth/hscas_login.sh
+```
+
+OpenWrt/Kwrt install checks:
+
+```sh
+opkg install /tmp/upload.ipk
+/etc/init.d/drcom_auth public_key
+/etc/init.d/drcom_auth authorize
+which openssl
+openssl version
+```
+
+If `/tmp/upload.ipk` is already installed:
+
+```sh
+opkg install --force-reinstall /tmp/upload.ipk
 ```
 
 ## Known Open Questions / Test Gaps
