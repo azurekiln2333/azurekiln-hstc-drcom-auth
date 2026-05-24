@@ -3,8 +3,9 @@
 START=95
 STOP=10
 USE_PROCD=1
-EXTRA_COMMANDS="ticket"
-EXTRA_HELP="	ticket	Get an internet ticket immediately"
+EXTRA_COMMANDS="authorize ticket"
+EXTRA_HELP="	authorize	Get the Dr.COM authorize URL only
+	ticket	Get an internet ticket immediately"
 
 APP_DIR="/usr/share/drcom-auth"
 CONFIG_FILE="$APP_DIR/config.sh"
@@ -117,6 +118,11 @@ start_service() {
 reload_service() {
 	stop
 	start
+}
+
+authorize() {
+	write_config
+	/bin/sh "$APP_DIR/get_authorize_url.sh"
 }
 
 ticket() {

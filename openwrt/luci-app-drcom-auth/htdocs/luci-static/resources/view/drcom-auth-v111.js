@@ -17,6 +17,12 @@ return view.extend({
 				title: 'Dr.COM 认证',
 				desc: '配置校园网认证与自动重连。',
 				basic: '基础设置',
+				authorize: '授权链接获取',
+				getAuthorize: '获取授权链接',
+				authorizeStatus: '授权链接状态',
+				authorizeIdle: '未获取',
+				authorizeRunning: '获取中...',
+				authorizeFailed: '获取失败',
 				cas: 'CAS 认证',
 				network: '联网检测',
 				auth: '认证',
@@ -47,6 +53,12 @@ return view.extend({
 				title: 'Dr.COM Auth',
 				desc: 'Configure campus network authentication and automatic reconnect.',
 				basic: 'Basic Settings',
+				authorize: 'Authorize URL',
+				getAuthorize: 'Get Authorize URL',
+				authorizeStatus: 'Authorize URL Status',
+				authorizeIdle: 'Not requested',
+				authorizeRunning: 'Requesting...',
+				authorizeFailed: 'Request failed',
 				cas: 'CAS Authentication',
 				network: 'Network Check',
 				auth: 'Authenticate',
@@ -91,7 +103,8 @@ return view.extend({
 			'.drcom-auth-view .cbi-value-field input,.drcom-auth-view .cbi-value-field select,.drcom-auth-view .cbi-value-field textarea,.drcom-auth-view .cbi-value-field .cbi-dropdown{margin-bottom:3px!important}',
 			'.drcom-auth-view .cbi-value-field > *:last-child{margin-bottom:0!important}',
 			'.drcom-auth-view .cbi-value-description{clear:both;margin-top:2px;margin-bottom:0}',
-			'.drcom-auth-view .cbi-button{margin-bottom:3px}'
+			'.drcom-auth-view .cbi-button{margin-bottom:3px}',
+			'.drcom-auth-view .drcom-result{word-break:break-all;white-space:normal}'
 		].join('\n'));
 
 		s = m.section(form.TypedSection, 'drcom_auth', tr('basic'));
@@ -115,6 +128,37 @@ return view.extend({
 		o.value('1', tr('pc'));
 		o.value('2', tr('mobile'));
 		o.default = '2';
+
+		s = m.section(form.TypedSection, 'drcom_auth', tr('authorize'));
+		s.anonymous = true;
+		s.addremove = false;
+
+		o = s.option(form.Button, '_authorize', tr('getAuthorize'));
+		o.inputtitle = tr('getAuthorize');
+		o.inputstyle = 'apply';
+		o.onclick = function() {
+			var node = document.getElementById('drcom-authorize-status');
+			if (node)
+				node.textContent = tr('authorizeRunning');
+
+			return fs.exec('/etc/init.d/drcom_auth', [ 'authorize' ]).then(function(res) {
+				var node = document.getElementById('drcom-authorize-status');
+				var output = (res && (res.stdout || res.stderr)) ? (res.stdout || res.stderr).trim() : '';
+				if (node)
+					node.textContent = output || tr('authorizeIdle');
+			}).catch(function(e) {
+				var node = document.getElementById('drcom-authorize-status');
+				if (node)
+					node.textContent = tr('authorizeFailed') + ': ' + e.message;
+				ui.addNotification(null, E('p', e.message), 'error');
+			});
+		};
+
+		o = s.option(form.DummyValue, '_authorize_status', tr('authorizeStatus'));
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return '<span id="drcom-authorize-status" class="drcom-result">' + tr('authorizeIdle') + '</span>';
+		};
 
 		s = m.section(form.TypedSection, 'drcom_auth', tr('cas'));
 		s.anonymous = true;
