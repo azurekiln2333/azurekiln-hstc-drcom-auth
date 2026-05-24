@@ -19,7 +19,7 @@ return view.extend({
 	},
 
 	render: function(data) {
-		var m, s, o, compactStyle, lang, tr;
+		var m, s, o, compactStyle, lang, browserLang, tr;
 		var isEnabled = (data[0] || '').trim() === 'enabled';
 		var publicKeyStatus = (data[1] || '').trim();
 		var dict = {
@@ -53,6 +53,7 @@ return view.extend({
 				publicKeyUpdating: '更新中...',
 				publicKeyDone: '公钥已更新',
 				publicKeyFailed: '公钥更新失败',
+				publicKeyUpdatedAt: '公钥已更新：%s（%s）',
 				wanPort: 'WAN 接口',
 				deviceType: '设备类型',
 				pc: '电脑',
@@ -65,7 +66,55 @@ return view.extend({
 				casUrl: 'CAS 地址',
 				userAgent: 'User-Agent',
 				language: '语言',
-				langZh: '中文',
+				langZh: '简体中文',
+				langZhTw: '繁體中文',
+				langEn: 'English'
+			},
+			'zh-tw': {
+				title: 'Dr.COM 認證',
+				desc: '設定校園網認證與自動重連。',
+				basic: '基礎設定',
+				authorize: '網頁授權連結取得',
+				authorizeStep: '上網第一步',
+				getAuthorize: '取得網頁授權連結',
+				authorizeStatus: '網頁授權連結狀態',
+				authorizeIdle: '未取得',
+				authorizeRunning: '取得中...',
+				authorizeDone: '取得成功',
+				authorizeFailed: '取得失敗',
+				cas: 'CAS 認證',
+				network: '連網偵測',
+				auth: '認證',
+				authStatus: '認證狀態',
+				authIdle: '未認證',
+				authRunning: '認證中...',
+				authDone: '已執行認證。',
+				authFailed: '認證失敗',
+				enable: '啟用連網偵測',
+				username: '帳號',
+				password: '密碼',
+				publicKeyUrl: '公鑰位址',
+				updatePublicKey: '更新公鑰',
+				publicKeyStatus: '公鑰狀態',
+				publicKeyIdle: '未更新',
+				publicKeyUpdating: '更新中...',
+				publicKeyDone: '公鑰已更新',
+				publicKeyFailed: '公鑰更新失敗',
+				publicKeyUpdatedAt: '公鑰已更新：%s（%s）',
+				wanPort: 'WAN 介面',
+				deviceType: '裝置類型',
+				pc: '電腦',
+				mobile: '行動裝置',
+				interval: '兩次連網間隔時間',
+				intervalDesc: '兩次連網偵測之間的秒數。',
+				pingHost: '偵測主機',
+				server: '伺服器設定',
+				serverIp: 'Dr.COM 伺服器 IP',
+				casUrl: 'CAS 位址',
+				userAgent: 'User-Agent',
+				language: '語言',
+				langZh: '簡體中文',
+				langZhTw: '繁體中文',
 				langEn: 'English'
 			},
 			en: {
@@ -98,6 +147,7 @@ return view.extend({
 				publicKeyUpdating: 'Updating...',
 				publicKeyDone: 'Public key updated',
 				publicKeyFailed: 'Public key update failed',
+				publicKeyUpdatedAt: 'Public key updated: %s (%s)',
 				wanPort: 'WAN Interface',
 				deviceType: 'Device Type',
 				pc: 'PC',
@@ -110,14 +160,54 @@ return view.extend({
 				casUrl: 'CAS URL',
 				userAgent: 'User-Agent',
 				language: 'Language',
-				langZh: '中文',
+				langZh: 'Simplified Chinese',
+				langZhTw: '繁體中文',
 				langEn: 'English'
 			}
 		};
 
-		lang = window.localStorage.getItem('drcom-auth-lang') || ((navigator.language || '').indexOf('zh') === 0 ? 'zh' : 'en');
+		browserLang = (navigator.language || '').toLowerCase();
+		lang = window.localStorage.getItem('drcom-auth-lang') ||
+			(/^zh-(tw|hk|mo)/.test(browserLang) ? 'zh-tw' : (browserLang.indexOf('zh') === 0 ? 'zh' : 'en'));
+		if (!dict[lang])
+			lang = 'en';
 		tr = function(key) {
 			return dict[lang][key] || key;
+		};
+		var format = function(text) {
+			var args = Array.prototype.slice.call(arguments, 1);
+			var index = 0;
+			return text.replace(/%s/g, function() {
+				return args[index++] || '';
+			});
+		};
+		var htmlEscape = function(text) {
+			return String(text || '').replace(/[&<>"']/g, function(ch) {
+				return {
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#39;'
+				}[ch];
+			});
+		};
+		var publicKeyStatusText = function(raw) {
+			var text = (raw || '').trim();
+			var parts, match;
+
+			if (!text)
+				return tr('publicKeyIdle');
+
+			parts = text.split('\t');
+			if (parts[0] === 'updated' && parts[1] && parts[2])
+				return format(tr('publicKeyUpdatedAt'), parts[1], parts[2]);
+
+			match = text.match(/^Public key updated:\s*(.+)\s+\((.+)\)$/);
+			if (match)
+				return format(tr('publicKeyUpdatedAt'), match[1], match[2]);
+
+			return text;
 		};
 		var execMessage = function(obj) {
 			return [
@@ -154,6 +244,7 @@ return view.extend({
 		o.cfgvalue = function() {
 			return '<select id="drcom-lang-select" class="cbi-input-select">' +
 				'<option value="zh"' + (lang === 'zh' ? ' selected="selected"' : '') + '>' + tr('langZh') + '</option>' +
+				'<option value="zh-tw"' + (lang === 'zh-tw' ? ' selected="selected"' : '') + '>' + tr('langZhTw') + '</option>' +
 				'<option value="en"' + (lang === 'en' ? ' selected="selected"' : '') + '>' + tr('langEn') + '</option>' +
 				'</select>';
 		};
@@ -232,9 +323,10 @@ return view.extend({
 				var node = document.getElementById('drcom-public-key-status');
 				var message = execMessage(res) || tr('publicKeyDone');
 				var failed = execFailed(res, message);
+				var displayMessage = failed ? tr('publicKeyFailed') + ': ' + message : publicKeyStatusText(message);
 				if (node)
-					node.textContent = (failed ? tr('publicKeyFailed') : tr('publicKeyDone')) + ': ' + message;
-				ui.addNotification(null, E('p', message), failed ? 'error' : undefined);
+					node.textContent = displayMessage;
+				ui.addNotification(null, E('p', displayMessage), failed ? 'error' : undefined);
 			}).catch(function(e) {
 				var node = document.getElementById('drcom-public-key-status');
 				var message = execMessage(e) || tr('publicKeyFailed');
@@ -247,7 +339,7 @@ return view.extend({
 		o = s.option(form.DummyValue, '_public_key_status', tr('publicKeyStatus'));
 		o.rawhtml = true;
 		o.cfgvalue = function() {
-			return '<span id="drcom-public-key-status" class="drcom-result">' + (publicKeyStatus || tr('publicKeyIdle')) + '</span>';
+			return '<span id="drcom-public-key-status" class="drcom-result">' + htmlEscape(publicKeyStatusText(publicKeyStatus)) + '</span>';
 		};
 
 		o = s.option(form.Button, '_auth', tr('auth'));

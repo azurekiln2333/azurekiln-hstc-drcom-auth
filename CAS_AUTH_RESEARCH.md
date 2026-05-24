@@ -6,14 +6,15 @@ This file records the important context discovered while adapting the OpenWrt Lu
 
 ## Current Package State
 
-- Current package: `release/luci-app-drcom-auth_1.0.21-1_all.ipk`
-- SHA256: `2ddcc18496e9e039872da642e1e4cccf5d2cc68fbe7962a63eaf1713741818e3`
-- Current package source version: `1.0.21-1`
+- Current package: `release/luci-app-drcom-auth_1.0.22-1_all.ipk`
+- SHA256: `41dfe57b35dd25e466f032dfb1a7cfea9c461393cdae8f2e03e1a5140984c7e6`
+- Current package source version: `1.0.22-1`
 - Main package path: `openwrt/luci-app-drcom-auth`
 - Local packaging script: `openwrt/package_ipk.ps1`
 
 Recent relevant commits:
 
+- current update: localize public key status and add Traditional Chinese UI
 - current update: persist public key refresh status across LuCI reloads
 - current update: fix generated config path for init-script commands
 - pending commit: fix public key update status handling
@@ -235,10 +236,16 @@ Status command:
 This prints the cached public key update time when the file exists, for example:
 
 ```text
-Public key updated: 2026-05-25 07:30:12 (/usr/share/drcom-auth/info/public_key.pem)
+updated	2026-05-25 07:30:12	/usr/share/drcom-auth/info/public_key.pem
 ```
 
-LuCI reads this command on page load so the `公钥状态` row survives browser refreshes. If the cached key does not exist, the backend returns an empty success response and the UI shows the localized idle text such as `未更新`.
+The status output is intentionally machine-readable. LuCI formats it in the currently selected UI language, for example:
+
+- Simplified Chinese: `公钥已更新：2026-05-25 07:30:12（/usr/share/drcom-auth/info/public_key.pem）`
+- Traditional Chinese: `公鑰已更新：2026-05-25 07:30:12（/usr/share/drcom-auth/info/public_key.pem）`
+- English: `Public key updated: 2026-05-25 07:30:12 (/usr/share/drcom-auth/info/public_key.pem)`
+
+LuCI reads this command on page load so the `公钥状态` / `公鑰狀態` / `Public Key Status` row survives browser refreshes. If the cached key does not exist, the backend returns an empty success response and the UI shows the localized idle text such as `未更新`.
 
 Rationale:
 
@@ -248,7 +255,13 @@ Rationale:
 
 ## LuCI UI Notes
 
-The UI uses these sections:
+The UI currently supports:
+
+- Simplified Chinese
+- Traditional Chinese
+- English
+
+The Simplified Chinese UI uses these sections:
 
 - `基础设置`
 - `网页授权链接获取`
@@ -268,6 +281,7 @@ Failure display was improved:
 - Public key refresh no longer prefixes a failed command result with `公钥已更新`; failures are shown as `公钥更新失败`.
 - Public key refresh backend reports HTTP status on failure, for example `Update public key failed: ... (HTTP 403)`.
 - Public key status is persisted by reading the cached key file modification time from `/usr/share/drcom-auth/info/public_key.pem`.
+- Public key status is formatted by LuCI, not by the backend, so it follows the selected language.
 - This helps expose script-level errors instead of only LuCI generic errors.
 
 ## Important Commands

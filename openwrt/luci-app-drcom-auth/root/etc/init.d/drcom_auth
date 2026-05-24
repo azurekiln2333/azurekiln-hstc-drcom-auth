@@ -168,7 +168,7 @@ public_key_status() {
 
 	mtime=$(stat -c "%y" "$PUBLIC_KEY_FILE" 2>/dev/null | sed 's/\..*//')
 	[ -n "$mtime" ] || mtime=$(ls -l "$PUBLIC_KEY_FILE" 2>/dev/null | awk '{print $6" "$7" "$8}')
-	printf "%s\n" "Public key updated: $mtime ($PUBLIC_KEY_FILE)"
+	printf "%s\t%s\t%s\n" "updated" "$mtime" "$PUBLIC_KEY_FILE"
 }
 
 boot() {
